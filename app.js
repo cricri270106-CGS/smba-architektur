@@ -46,14 +46,29 @@
   var feat = FEATURED.map(function (s) { return bySlug[s]; }).filter(Boolean);
   if (feat.length < FEATURED.length) feat = P.slice(0, 6);
 
+  // Hero: SMBA's own large homepage photos first, then the featured projects
+  var HERO = [
+    { s: 'sanierung-umbau-und-erweiterung-bauernhaus-gals', src: 'img/brand/hero-gals.jpg' },
+    { s: 'wohnen-eymatt-bern', src: 'img/brand/hero-eymatt.jpg' },
+    { s: 'umbau-sanierung-fotostudio-fraeschels', src: 'img/brand/hero-fotostudio.jpg' },
+    { s: 'neubau-geschaeftsgebaeude-kerzers' },
+    { s: 'aufstockung-wohnhaus-fraeschels' }
+  ].filter(function (h) { return bySlug[h.s]; });
+  var heroFeat = HERO.map(function (h) { return bySlug[h.s]; });
   var slides = $('[data-hero-slides]'), cap = $('[data-hero-cap]');
-  var heroImgs = feat.map(function (p, k) {
+  var heroImgs = heroFeat.map(function (p, k) {
     var im = new Image(); im.alt = ''; im.decoding = 'async';
-    im.src = img(p, p.cv);
+    im.src = HERO[k].src || img(p, p.cv);
     if (k === 0) { im.className = 'on'; im.fetchPriority = 'high'; } else im.fetchPriority = 'low';
     slides.appendChild(im); return im;
   });
-  cap.textContent = feat[0].t;
+  var heroCount = $('[data-hero-count]'), heroYear = $('[data-hero-year]');
+  var setCap = function (k) {
+    cap.textContent = heroFeat[k].t;
+    if (heroYear) heroYear.textContent = heroFeat[k].y || '';
+    if (heroCount) heroCount.textContent = pad(k + 1) + ' / ' + pad(heroFeat.length);
+  };
+  setCap(0);
   var hi = 0;
   if (!reduced && heroImgs.length > 1) {
     setInterval(function () {
@@ -61,10 +76,10 @@
       heroImgs[hi].classList.remove('on');
       hi = (hi + 1) % heroImgs.length;
       heroImgs[hi].classList.add('on');
-      cap.textContent = feat[hi].t;
-    }, 6000);
+      setCap(hi);
+    }, 6500);
   }
-  $('[data-hero]').addEventListener('click', function () { openProject(feat[hi]); });
+  $('[data-hero]').addEventListener('click', function () { openProject(heroFeat[hi]); });
   $('[data-hero]').style.cursor = 'pointer';
 
   /* ---------- Cards ---------- */
@@ -73,9 +88,9 @@
     li.innerHTML =
       '<button class="card" type="button" data-slug="' + p.s + '" aria-label="Projekt öffnen: ' + esc(p.t) + '">' +
         '<div class="card-media"><img src="' + (big ? img(p, p.cv) : img(p, 'thumb')) + '" alt="" loading="lazy" decoding="async">' +
-        '<span class="chip">' + esc(p.c[0]) + '</span>' +
         '<span class="card-open" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></span></div>' +
-        '<div class="card-body"><span class="card-title">' + esc(p.t) + '</span>' +
+        '<div class="card-body"><span class="card-cat">' + esc(p.c[0]) + '</span>' +
+        '<span class="card-title">' + esc(p.t) + '</span>' +
         (p.y ? '<span class="card-year">' + p.y + '</span>' : '') + '</div>' +
       '</button>';
     return li;
@@ -98,7 +113,7 @@
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'filter'; b.dataset.cat = c;
     b.setAttribute('aria-pressed', String(c === state.cat));
-    b.innerHTML = esc(c) + ' <small>' + n + '</small>';
+    b.innerHTML = esc(c.toLowerCase()) + ' <small>' + n + '</small>';
     filtersEl.appendChild(b);
   });
   filtersEl.addEventListener('click', function (e) {
@@ -193,7 +208,7 @@
   }
 
   /* ---------- Band: duplicate for seamless loop ---------- */
-  var band = $('[data-band]'); band.innerHTML += band.innerHTML;
+  var band = $('[data-band]'); if (band) band.innerHTML += band.innerHTML;
 
   /* ---------- Project dialog ---------- */
   var modal = $('[data-modal]'), stageImg = $('[data-stage-img]'), thumbs = $('[data-thumbs]');
